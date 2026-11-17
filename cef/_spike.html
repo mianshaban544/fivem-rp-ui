@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Grand UI spike</title>
+  <link rel="stylesheet" href="main.css">
+  <script>
+    // Detroid spike (2026-09-25): open one screen of the Grand RP CEF bundle with mock data, no game client.
+    window.curr_lang = 'en';
+    window.mp = { trigger: function () { console.log('[spike] mp.trigger', JSON.stringify(Array.prototype.slice.call(arguments))); }, isTest: true, events: { add: function () {}, call: function () {} } };
+  </script>
+</head>
+<body style="background:#1b1b1b">
+  <design id="app"></design>
+  <script src="core.js"></script>
+  <script src="_spike_mock.js"></script>
+  <script>
+    (function () {
+      var screen = (location.search.match(/screen=([a-z_]+)/) || [])[1] || 'darknet';
+      function run() {
+        if (!window.APP || !APP.$store) { return setTimeout(run, 200); }
+        var S = APP.$store.state;
+        try { APP.constructor.config.errorHandler = function (err, vm, info) { console.log('[spike-err] ' + (vm && vm.$options && vm.$options.name) + ' | ' + info + ' | ' + String(err.stack || err).split(String.fromCharCode(10)).slice(0, 3).join(' || ')); }; } catch (e) {}
+        try { S.hud.server = 1; S.hud.pid = 42; S.hud.money = 125000; S.hud.bankmoney = 3400000; } catch (e) {}
+        if (screen === 'darknet') {
+          Object.assign(S.darknet, { show: true, page: 0, isInGang: true, theft_skill: 2, robbed_cars: 7,
+            theft_veh_name: 'Sultan RS', theft_veh_number_plate: 'DT 4471', theft_veh_price: 240000,
+            wantedList: [{ pid: 15, name: 'John Doe', price: 25000, wanted: 3 }, { pid: 88, name: 'Marco Silva', price: 75000, wanted: 5 }],
+            customOrders: [{ id: 1, pid: 120, name: 'Sam Fisher', price: 25000 }] });
+        } else if (screen === 'family' && /plain=1/.test(location.search)) {
+          S.family.show = true;
+        } else if (screen === 'family') {
+          Object.assign(S.family, { show: true, coefs: [1, 1, 1, 1, 1, 1], family: 12, name: 'DETROID KINGS', nationality: 1, balance: 1250000, donate_balance: 300, owner: 'Jack Ryan', ownerid: 42,
+            leader_msg: 'Family meeting tonight 21:00', level: 4, place: 3, raiting_place: 3, family_points: 15400, fam_onli: 2, day: 12, hour: 20, min: 15, date: '25.09.2026',
+            ranks: [{ id: 1, name: 'Recruit', rank_name: 'Recruit', options: [1,0,0,0,0,0,0,0,0,0,0,0] }, { id: 2, name: 'Member', rank_name: 'Member', options: [1,1,0,0,0,0,0,0,0,0,0,0] }, { id: 3, name: 'Deputy', rank_name: 'Deputy', options: [1,1,1,1,0,0,0,0,0,0,0,0] }, { id: 4, name: 'Leader', rank_name: 'Leader', options: [1,1,1,1,1,1,1,1,1,1,1,1] }],
+            members_online: [{ pid: 42, name: 'Jack Ryan', rank: 4, rank_name: 'Leader', online: true, lvl: 12 }, { pid: 77, name: 'Nina Cross', rank: 2, rank_name: 'Member', online: true, lvl: 5 }],
+            members_offline: [{ pid: 91, name: 'Leo Park', rank: 1, rank_name: 'Recruit', online: false, lvl: 2, last_seen: '24.09.2026' }],
+            loaded_ranks: 1, loaded_biz: 1, business: [], family_logs: [], fam_top_list: [], fam_history: [] });
+        } else if (S[screen]) {
+          Object.assign(S[screen], (window.MOCK && window.MOCK[screen]) || {}, { show: true });
+        }
+        console.log('[spike] shown', screen, 'store keys', Object.keys(S).length);
+      }
+      run();
+    })();
+  </script>
+</body>
+</html>

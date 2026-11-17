@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Grand UI spike — all screens</title>
+  <link rel="stylesheet" href="main.css">
+  <script>
+    window.curr_lang = 'en';
+    window.mp = { trigger: function () {}, isTest: true, events: { add: function () {}, call: function () {} } };
+  </script>
+</head>
+<body style="background:#1b1b1b">
+  <design id="app"></design>
+  <script src="core.js"></script>
+  <script src="_spike_mock.js"></script>
+  <script>
+    (function () {
+      var errs = [];
+      function run() {
+        if (!window.APP || !APP.$store) { return setTimeout(run, 200); }
+        try { APP.constructor.config.errorHandler = function (err, vm, info) { var st = String(err && err.stack || '').match(/core\.js:2:(\d+)/); errs.push((vm && vm.$options && vm.$options.name) + ':' + String(err && err.message).slice(0, 80) + '@' + (st ? st[1] : '?')); }; } catch (e) {}
+        var S = APP.$store.state;
+        var only = (location.search.match(/only=([a-z0-9_,]+)/i) || [])[1]; var keys = Object.keys(S).filter(function (k) { return S[k] && typeof S[k] === 'object' && !Array.isArray(S[k]) && ('show' in S[k]) && (!only || only.split(',').indexOf(k) >= 0); });
+        var MOCK = window.MOCK || {}; keys.forEach(function (k) { if (MOCK[k]) Object.assign(S[k], MOCK[k]); });
+        var app = document.getElementById('app');
+        var base = app.innerHTML.length;
+        var hold = parseInt((location.search.match(/hold=(\d+)/) || [])[1] || '1500', 10);
+        var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;top:8px;left:8px;z-index:999999;background:#000c;color:#0f8;font:bold 18px monospace;padding:6px 12px;border-radius:6px'; document.body.appendChild(ov);
+        var i = 0, ok = [], errored = [], blank = [];
+        function next() {
+          if (i >= keys.length) {
+            ov.textContent = 'DONE: ' + keys.length + ' screens, ok ' + ok.length + ', blank ' + blank.length + ', error ' + errored.length + '  (details in F12 console)';
+            console.log('[all] total=' + keys.length + ' ok=' + ok.length + ' blank=' + blank.length + ' error=' + errored.length);
+            console.log('[all-ok] ' + ok.join(' '));
+            console.log('[all-blank] ' + blank.join(' '));
+            console.log('[all-error] ' + errored.join(' '));
+            return;
+          }
+          var k = keys[i++];
+          errs = [];
+          try { S[k].show = true; } catch (e) { errored.push(k + ':set'); return next(); }
+          APP.$nextTick(function () {
+            var grew = app.innerHTML.length - base;
+            var status = errs.length ? 'ERROR ' + errs[0] : (grew > 50 ? 'OK' : 'BLANK (no screen / no data)');
+            if (errs.length) errored.push(k + '(' + errs[0].replace(/\s+/g, '_') + ')');
+            else if (grew > 50) ok.push(k);
+            else blank.push(k);
+            ov.textContent = i + ' / ' + keys.length + '  ' + k + '  —  ' + status;
+            setTimeout(function () { try { S[k].show = false; } catch (e) {} APP.$nextTick(next); }, hold);
+          });
+        }
+        next();
+      }
+      run();
+    })();
+  </script>
+</body>
+</html>
